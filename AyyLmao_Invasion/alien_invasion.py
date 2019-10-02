@@ -14,6 +14,8 @@ from alien import Alien
 pygame.init()
 pygame.mixer.init()
 
+animate_ship = pygame.USEREVENT + 2
+
 class AlienInvasion:
     """Overall class to manage game assets and behavior."""
     # Sounds.
@@ -21,10 +23,11 @@ class AlienInvasion:
 
     def __init__(self):
         """Initialize the game, and create game resources."""
-        #pygame.init()
-        #pygame.mixer.init()
         self.settings = Settings()
+        self.HEIGHT = 800
+        self.WIDTH = 600
 
+        #self.screen = pygame.display.set_mode((self.HEIGHT, self.WIDTH))
         self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
         self.settings.screen_width = self.screen.get_rect().width
         self.settings.screen_height = self.screen.get_rect().height
@@ -41,13 +44,22 @@ class AlienInvasion:
 
         self._create_fleet()
 
-        # Make the Play button.
-        self.play_button = Button(self, "Play")
+        # Clock
+        self.watch = pygame.time.Clock()
+        self.fps = 120
+
+        # Make buttons.
+        self.play_button = Button(self, "PLAY", 700, 500)
+        self.exit_button = Button(self, "EXIT", 1000, 500)
+        self.scores_button = Button(self, "SCORES", 850, 600)
+
 
     def run_game(self):
         """Start the main loop for the game."""
         while True:
             self._check_events()
+            self.watch.tick(self.fps)
+            pygame.time.set_timer(animate_ship, 200)
 
             if self.stats.game_active:
                 self.ship.update()
@@ -68,6 +80,10 @@ class AlienInvasion:
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = pygame.mouse.get_pos()
                 self._check_play_button(mouse_pos)
+                self._check_exit_button(mouse_pos)
+                self._check_scores_button(mouse_pos)
+            elif event.type == animate_ship:
+                print("ANIMATE")
 
     def _check_play_button(self, mouse_pos):
         """Start a new game when the player clicks Play."""
@@ -93,6 +109,19 @@ class AlienInvasion:
 
             # Hide the mouse cursor.
             pygame.mouse.set_visible(False)
+
+    def _check_exit_button(self, mouse_pos):
+        """Exit the game when the player clicks Exit"""
+        button_clicked = self.exit_button.rect.collidepoint(mouse_pos)
+        if button_clicked:
+            sys.exit()
+
+    def _check_scores_button(self, mouse_pos):
+        """Show the highscores screen"""
+        button_clicked = self.scores_button.rect.collidepoint(mouse_pos)
+        if button_clicked:
+            self.screen.fill((0, 0, 0))
+            print("SCORES")
 
     def _check_keydown_events(self, event):
         """Respond to keypresses."""
@@ -253,10 +282,12 @@ class AlienInvasion:
 
         # Draw the play button if the game is inactive.
         if not self.stats.game_active:
+            self.screen.fill((21, 30, 161))
             self.play_button.draw_button()
+            self.exit_button.draw_button()
+            self.scores_button.draw_button()
 
         pygame.display.flip()
-
 
 if __name__ == '__main__':
     # Make a game instance, and run the game.

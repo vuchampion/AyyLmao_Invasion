@@ -10,9 +10,16 @@ class Alien(Sprite):
         self.screen = ai_game.screen
         self.settings = ai_game.settings
 
+        # Clock
+        #self.watch = pygame.time.Clock()
+
         # Load the alien image and set its rect attribute.
-        self.image = pygame.image.load('PNG/shipGreen_manned.png')
+        self.image = pygame.image.load('images/alien.png')
         self.rect = self.image.get_rect()
+
+        # Animating sprites
+        self.sprites = [pygame.image.load('images/alien.png'), pygame.image.load('images/alien2.png')]
+        self.frame = 0
 
         # Start each new alien near the top left of the screen.
         self.rect.x = self.rect.width
@@ -29,6 +36,5 @@ class Alien(Sprite):
 
     def update(self):
         """Move the alien right or left."""
-        self.x += (self.settings.alien_speed *
-                        self.settings.fleet_direction)
+        self.x += (self.settings.alien_speed * self.settings.fleet_direction)
         self.rect.x = self.x
