@@ -8,12 +8,14 @@ class Menu:
         self.WIDTH = 600
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
 
-    def menu_play(self):
-        self.play_button = Button(self, "Bepis", 200, 200)
+    def play_button(self, xcor, ycor):
+        self.play_button = Button(self, "Bepis", xcor, ycor)
         self.play_button.draw_button()
 
-        self.play_button = Button(self, "Poontang", 200, 0)
+    def scores_button(self, xcor, ycor):
+        self.play_button = Button(self, "Scores", xcor, ycor)
         self.play_button.draw_button()
 
-        self.play_button = Button(self, "sudo rm", 200, 500)
+    def exit_button(self, xcor, ycor):
+        self.play_button = Button(self, "Exit", xcor, ycor)
         self.play_button.draw_button()
