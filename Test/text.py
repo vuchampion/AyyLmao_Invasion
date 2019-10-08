@@ -2,7 +2,7 @@ import pygame.font
 
 class Text:
     def __init__(self):
-        #self.screen = ai_game.screen
+        self.screen = ai_game.screen
         self.font_size = 60
         self.font = pygame.font.SysFont(None, self.font_size)
 

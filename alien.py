@@ -4,17 +4,26 @@ from pygame.sprite import Sprite
 class Alien(Sprite):
     """A class to represent a single alien in the fleet."""
 
-    def __init__(self, ai_game):
+    def __init__(self, ai_game, image_file):
         """Initialize the alien and set its starting position."""
         super().__init__()
         self.screen = ai_game.screen
         self.settings = ai_game.settings
 
+        self.alien_points = 1
+
+        if image_file == 'images/alien.png':
+            self.alien_points = 50
+        if image_file == 'images/alien3.png':
+            self.alien_points = 75
+        if image_file == 'images/alien5.png':
+            self.alien_points = 125
         # Clock
         self.watch = pygame.time.Clock()
 
         # Load the alien image and set its rect attribute.
-        self.image = pygame.image.load('images/alien.png')
+        #self.image = pygame.image.load('images/alien.png')
+        self.image = pygame.image.load(image_file)
         self.rect = self.image.get_rect()
 
         # Animating sprites

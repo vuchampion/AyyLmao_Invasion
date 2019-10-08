@@ -21,6 +21,10 @@ class AlienInvasion:
     """Overall class to manage game assets and behavior."""
     # Sounds.
     laser = pygame.mixer.Sound("sounds/laser7.ogg")
+    death = pygame.mixer.Sound("sounds/explosion.wav")
+    bg_music = pygame.mixer.Sound("sounds/alienblues.wav")
+    bg_music2 = pygame.mixer.Sound("sounds/alienblues.wav")
+    bg_music3 = pygame.mixer.Sound("sounds/alienblues.wav")
 
     def __init__(self):
         """Initialize the game, and create game resources."""
@@ -30,6 +34,8 @@ class AlienInvasion:
         self.pause = False
         self.show_scores = False
         self.play_game = False
+        self.bg_music.play(99)
+        self.elapsed_time = 0
 
         #self.screen = pygame.display.set_mode((self.HEIGHT, self.WIDTH))
         self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
@@ -130,15 +136,16 @@ class AlienInvasion:
             sys.exit()
 
     def read_file(self):
+        list = []
         filepath = "Highscores/Highscores.txt"
         with open(filepath) as fp:
             line = fp.readline()
             cnt = 100
             while line:
+                list = list + [line.strip()]
                 print("Score: {}".format(line.strip()))
                 line = fp.readline()
                 cnt += 100
-                #self.print_score(str(line), 950, 600 + cnt)
                 self.messages("TEST", 950, 600 + cnt)
                 self.screen.blit(self.text, self.textRect)
 
@@ -197,6 +204,16 @@ class AlienInvasion:
 
         self._check_bullet_alien_collisions()
 
+    def music_func(self):
+        if pygame.time.get_ticks() % 1000 > 990:
+            self.elapsed_time += 1
+        #if self.elapsed_time == 15:
+        #    self.bg_music.stop()
+        #    self.bg_music2.play()
+        #if self.elapsed_time == 20:
+        #    self.bg_music2.stop()
+        #    self.bg_music3.play(5)
+
     def _check_bullet_alien_collisions(self):
         """Respond to bullet-alien collisions."""
         # Remove any bullets and aliens that have collided.
@@ -206,11 +223,16 @@ class AlienInvasion:
         if collisions:
             for aliens in collisions.values():
                 self.stats.score += self.settings.alien_points * len(aliens)
+                #self.stats.score += self.alien.alien_points * len(aliens)
             self.sb.prep_score()
             self.sb.check_high_score()
 
         if not self.aliens:
             # Destroy existing bullets and create new fleet.
+            #self.bg_music.stop()
+            #self.bg_music2.stop()
+            #self.bg_music3.stop()
+            self.music_func()
             self.bullets.empty()
             self._create_fleet()
             self.settings.increase_speed()
@@ -230,6 +252,7 @@ class AlienInvasion:
         # Look for alien-ship collisions.
         if pygame.sprite.spritecollideany(self.ship, self.aliens):
             self._ship_hit()
+            self.death.play()
 
         # Look for aliens hitting the bottom of the screen.
         self._check_aliens_bottom()
@@ -269,25 +292,55 @@ class AlienInvasion:
         """Create the fleet of aliens."""
         # Create an alien and find the number of aliens in a row.
         # Spacing between each alien is equal to one alien width.
-        alien = Alien(self)
+        alien = Alien(self, 'images/alien.png')
+        alien2 = Alien(self, 'images/alien3.png')
+        alien3 = Alien(self, 'images/alien5.png')
         alien_width, alien_height = alien.rect.size
         available_space_x = self.settings.screen_width - (2 * alien_width)
         number_aliens_x = available_space_x // (2 * alien_width)
-
+        #row_number = 6 rows of aliens from 0 - 5
+        #number_aliens_x = 15, 15 aliens across.
+        #available_space_y = 820
         # Determine the number of rows of aliens that fit on the screen.
         ship_height = self.ship.rect.height
         available_space_y = (self.settings.screen_height -
                                 (3 * alien_height) - ship_height)
-        number_rows = available_space_y // (2 * alien_height)
-
+        #number_rows = available_space_y // (2 * alien_height)
+        number_rows = 0
+        number_rows2 = 2
+        number_rows3 = 4
         # Create the full fleet of aliens.
-        for row_number in range(number_rows):
+        for row_number in range(number_rows, 2):
+            for alien_number in range(number_aliens_x):
+                self._create_alien3(alien_number, row_number)
+        for row_number in range(number_rows2, 4):
             for alien_number in range(number_aliens_x):
                 self._create_alien(alien_number, row_number)
+        for row_number in range(number_rows3, 6):
+            for alien_number in range(number_aliens_x):
+                self._create_alien2(alien_number, row_number)
 
     def _create_alien(self, alien_number, row_number):
         """Create an alien and place it in the row."""
-        alien = Alien(self)
+        alien = Alien(self, 'images/alien.png')
+        alien_width, alien_height = alien.rect.size
+        alien.x = alien_width + 2 * alien_width * alien_number
+        alien.rect.x = alien.x
+        alien.rect.y = alien.rect.height + 2 * alien.rect.height * row_number
+        self.aliens.add(alien)
+
+    def _create_alien2(self, alien_number, row_number):
+        """Create an alien and place it in the row."""
+        alien = Alien(self, 'images/alien3.png')
+        alien_width, alien_height = alien.rect.size
+        alien.x = alien_width + 2 * alien_width * alien_number
+        alien.rect.x = alien.x
+        alien.rect.y = alien.rect.height + 2 * alien.rect.height * row_number
+        self.aliens.add(alien)
+
+    def _create_alien3(self, alien_number, row_number):
+        """Create an alien and place it in the row."""
+        alien = Alien(self, 'images/alien5.png')
         alien_width, alien_height = alien.rect.size
         alien.x = alien_width + 2 * alien_width * alien_number
         alien.rect.x = alien.x
@@ -323,6 +376,7 @@ class AlienInvasion:
 
     def _update_screen(self):
         """Update images on the screen, and flip to the new screen."""
+        self.music_func()
         self.screen.fill(self.settings.bg_color)
         self.ship.blitme()
         for bullet in self.bullets.sprites():
