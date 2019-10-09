@@ -10,14 +10,7 @@ class Alien(Sprite):
         self.screen = ai_game.screen
         self.settings = ai_game.settings
 
-        self.alien_points = 1
-
-        if image_file == 'images/alien.png':
-            self.alien_points = 50
-        if image_file == 'images/alien3.png':
-            self.alien_points = 75
-        if image_file == 'images/alien5.png':
-            self.alien_points = 125
+        point = 10
         # Clock
         self.watch = pygame.time.Clock()
 

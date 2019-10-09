@@ -1,7 +1,7 @@
 import sys
 from time import sleep
 
-import pygame
+import pygame, random
 
 from settings import Settings
 from game_stats import GameStats
@@ -9,6 +9,7 @@ from scoreboard import Scoreboard
 from button import Button
 from ship import Ship
 from bullet import Bullet
+from alien_bullet import Alien_Bullet
 from alien import Alien
 from scores import Scores
 
@@ -50,6 +51,7 @@ class AlienInvasion:
         self.highscores = Scores(self)
         self.ship = Ship(self)
         self.bullets = pygame.sprite.Group()
+        self.alien_bullets = pygame.sprite.Group()
         self.aliens = pygame.sprite.Group()
 
         self._create_fleet()
@@ -121,6 +123,7 @@ class AlienInvasion:
             # Get rid of any remaining aliens and bullets.
             self.aliens.empty()
             self.bullets.empty()
+            self.alien_bullets.empty()
 
             # Create a new fleet and center the ship.
             self._create_fleet()
@@ -192,6 +195,11 @@ class AlienInvasion:
             self.bullets.add(new_bullet)
             self.laser.play()
 
+    def _alien_bullet(self):
+        if (random.randint(0,200) == 10):
+            alien_bullet = Alien_Bullet(self)
+            self.alien_bullets.add(alien_bullet)
+
     def _update_bullets(self):
         """Update position of bullets and get rid of old bullets."""
         # Update bullet positions.
@@ -204,9 +212,10 @@ class AlienInvasion:
 
         self._check_bullet_alien_collisions()
 
-    def music_func(self):
+    def tick_func(self):
         if pygame.time.get_ticks() % 1000 > 990:
             self.elapsed_time += 1
+        return self.elapsed_time
         #if self.elapsed_time == 15:
         #    self.bg_music.stop()
         #    self.bg_music2.play()
@@ -223,7 +232,6 @@ class AlienInvasion:
         if collisions:
             for aliens in collisions.values():
                 self.stats.score += self.settings.alien_points * len(aliens)
-                #self.stats.score += self.alien.alien_points * len(aliens)
             self.sb.prep_score()
             self.sb.check_high_score()
 
@@ -232,7 +240,6 @@ class AlienInvasion:
             #self.bg_music.stop()
             #self.bg_music2.stop()
             #self.bg_music3.stop()
-            self.music_func()
             self.bullets.empty()
             self._create_fleet()
             self.settings.increase_speed()
@@ -256,6 +263,7 @@ class AlienInvasion:
 
         # Look for aliens hitting the bottom of the screen.
         self._check_aliens_bottom()
+        self._alien_bullet()
 
     def _check_aliens_bottom(self):
         """Check if any aliens have reached the bottom of the screen."""
@@ -376,11 +384,12 @@ class AlienInvasion:
 
     def _update_screen(self):
         """Update images on the screen, and flip to the new screen."""
-        self.music_func()
         self.screen.fill(self.settings.bg_color)
         self.ship.blitme()
         for bullet in self.bullets.sprites():
             bullet.draw_bullet()
+        for alien_bullet in self.alien_bullets.sprites():
+            alien_bullet.draw_bullet()
         self.aliens.draw(self.screen)
 
         # Draw the score information.
