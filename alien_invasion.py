@@ -9,7 +9,6 @@ from scoreboard import Scoreboard
 from button import Button
 from ship import Ship
 from bullet import Bullet
-from alien_bullet import Alien_Bullet
 from alien import Alien
 from scores import Scores
 
@@ -19,8 +18,7 @@ pygame.mixer.init()
 animate_ship = pygame.USEREVENT + 2
 
 class AlienInvasion:
-    """Overall class to manage game assets and behavior."""
-    # Sounds.
+    # Sounds
     laser = pygame.mixer.Sound("sounds/laser7.ogg")
     death = pygame.mixer.Sound("sounds/explosion.wav")
     bg_music = pygame.mixer.Sound("sounds/alienblues.wav")
@@ -28,11 +26,7 @@ class AlienInvasion:
     bg_music3 = pygame.mixer.Sound("sounds/alienblues.wav")
 
     def __init__(self):
-        """Initialize the game, and create game resources."""
         self.settings = Settings()
-        self.HEIGHT = 800
-        self.WIDTH = 600
-        self.pause = False
         self.show_scores = False
         self.play_game = False
         self.bg_music.play(99)
@@ -44,15 +38,16 @@ class AlienInvasion:
         self.settings.screen_height = self.screen.get_rect().height
         pygame.display.set_caption("Alien Invasion")
 
-        # Create an instance to store game statistics,
-        #   and create a scoreboard.
+        # Create an instance to store game statistics, and create a scoreboard.
         self.stats = GameStats(self)
         self.sb = Scoreboard(self)
         self.highscores = Scores(self)
+        self.scores = []
         self.ship = Ship(self)
         self.bullets = pygame.sprite.Group()
-        self.alien_bullets = pygame.sprite.Group()
         self.aliens = pygame.sprite.Group()
+        self.aliens2 = pygame.sprite.Group()
+        self.aliens3 = pygame.sprite.Group()
 
         self._create_fleet()
 
@@ -69,8 +64,14 @@ class AlienInvasion:
 
 
     def messages(self, msg, xcor, ycor):
-        self.font = pygame.font.Font('Fonts/Streamster.ttf', 150)
+        self.font = pygame.font.Font('Fonts/SFAlienEncounters-Italic.ttf', 150)
         self.text = self.font.render(msg, True, (245, 66, 114))
+        self.textRect = self.text.get_rect()
+        self.textRect.center = (xcor, ycor)
+
+    def messages_commando(self, msg, xcor, ycor):
+        self.font = pygame.font.Font('Fonts/SFAlienEncountersSolid-Ital.ttf', 50)
+        self.text = self.font.render(msg, True, (255, 255, 0))
         self.textRect = self.text.get_rect()
         self.textRect.center = (xcor, ycor)
 
@@ -80,7 +81,6 @@ class AlienInvasion:
             self._check_events()
             self.watch.tick(self.fps)
             pygame.time.set_timer(animate_ship, 200)
-
             if self.stats.game_active:
                 self.ship.update()
                 self._update_bullets()
@@ -122,8 +122,9 @@ class AlienInvasion:
 
             # Get rid of any remaining aliens and bullets.
             self.aliens.empty()
+            self.aliens2.empty()
+            self.aliens3.empty()
             self.bullets.empty()
-            self.alien_bullets.empty()
 
             # Create a new fleet and center the ship.
             self._create_fleet()
@@ -138,31 +139,47 @@ class AlienInvasion:
         if button_clicked:
             sys.exit()
 
-    def read_file(self):
-        list = []
+    def read_file(self, hiscores):
         filepath = "Highscores/Highscores.txt"
         with open(filepath) as fp:
             line = fp.readline()
-            cnt = 100
             while line:
-                list = list + [line.strip()]
-                print("Score: {}".format(line.strip()))
+                hiscores.append(line.strip())
                 line = fp.readline()
-                cnt += 100
-                self.messages("TEST", 950, 600 + cnt)
-                self.screen.blit(self.text, self.textRect)
+        fp.close()
+
+    def write_file(self, msg):
+        filepath = "Highscores/Highscores.txt"
+        f = open(filepath, 'a')
+        f.write(msg)
+        f.close()
+
+    def test_write(self, hiscores, msg):
+        count = 0
+        filepath = "Highscores/Highscores.txt"
+        with open(filepath) as fp:
+            line = fp.readline()
+            while line:
+                hiscores.append(line.strip())
+                line = fp.readline()
+                count += 1
+        fp.close()
+
+        filepath = "Highscores/Highscores.txt"
+        f = open(filepath, 'a')
+        #f.write(msg)
+        if count == 10:
+            print("COUNT IS 10")
+
+        f.close()
 
     def _check_scores_button(self, mouse_pos):
         """Show the highscores screen"""
         button_clicked = self.scores_button.rect.collidepoint(mouse_pos)
         if button_clicked:
             self.show_scores = True
-            self.read_file()
-            #self.screen.blit(self.text, self.textRect)
-        #self.messages(self.highscores.read_file(), 950, 800)
-        #self.messages("TEST", 1250, 500)
-        #self.screen.blit(self.text, self.textRect)
-
+            self.read_file(self.scores)
+            #self.test_write(self.scores, str(self.sb.stats.high_score) + '\n')
 
     def _check_back_button(self, mouse_pos):
         """Handle the back button"""
@@ -176,7 +193,7 @@ class AlienInvasion:
             self.ship.moving_right = True
         elif event.key == pygame.K_LEFT:
             self.ship.moving_left = True
-        elif event.key == pygame.K_q:
+        elif event.key == pygame.K_ESCAPE:
             sys.exit()
         elif event.key == pygame.K_SPACE:
             self._fire_bullet()
@@ -195,11 +212,6 @@ class AlienInvasion:
             self.bullets.add(new_bullet)
             self.laser.play()
 
-    def _alien_bullet(self):
-        if (random.randint(0,200) == 10):
-            alien_bullet = Alien_Bullet(self)
-            self.alien_bullets.add(alien_bullet)
-
     def _update_bullets(self):
         """Update position of bullets and get rid of old bullets."""
         # Update bullet positions.
@@ -216,30 +228,35 @@ class AlienInvasion:
         if pygame.time.get_ticks() % 1000 > 990:
             self.elapsed_time += 1
         return self.elapsed_time
-        #if self.elapsed_time == 15:
-        #    self.bg_music.stop()
-        #    self.bg_music2.play()
-        #if self.elapsed_time == 20:
-        #    self.bg_music2.stop()
-        #    self.bg_music3.play(5)
 
     def _check_bullet_alien_collisions(self):
         """Respond to bullet-alien collisions."""
         # Remove any bullets and aliens that have collided.
         collisions = pygame.sprite.groupcollide(
                 self.bullets, self.aliens, True, True)
+        collisions2 = pygame.sprite.groupcollide(
+                self.bullets, self.aliens2, True, True)
+        collisions3 = pygame.sprite.groupcollide(
+                self.bullets, self.aliens3, True, True)
 
         if collisions:
             for aliens in collisions.values():
                 self.stats.score += self.settings.alien_points * len(aliens)
             self.sb.prep_score()
             self.sb.check_high_score()
+        if collisions2:
+            for aliens2 in collisions2.values():
+                self.stats.score += self.settings.alien2_points * len(aliens2)
+            self.sb.prep_score()
+            self.sb.check_high_score()
+        if collisions3:
+            for aliens3 in collisions3.values():
+                self.stats.score += self.settings.alien3_points * len(aliens3)
+            self.sb.prep_score()
+            self.sb.check_high_score()
 
-        if not self.aliens:
+        if not self.aliens and not self.aliens2 and not self.aliens3:
             # Destroy existing bullets and create new fleet.
-            #self.bg_music.stop()
-            #self.bg_music2.stop()
-            #self.bg_music3.stop()
             self.bullets.empty()
             self._create_fleet()
             self.settings.increase_speed()
@@ -255,20 +272,37 @@ class AlienInvasion:
         """
         self._check_fleet_edges()
         self.aliens.update()
+        self.aliens2.update()
+        self.aliens3.update()
 
         # Look for alien-ship collisions.
         if pygame.sprite.spritecollideany(self.ship, self.aliens):
             self._ship_hit()
             self.death.play()
+        if pygame.sprite.spritecollideany(self.ship, self.aliens2):
+            self._ship_hit()
+            self.death.play()
+        if pygame.sprite.spritecollideany(self.ship, self.aliens3):
+            self._ship_hit()
+            self.death.play()
 
         # Look for aliens hitting the bottom of the screen.
         self._check_aliens_bottom()
-        self._alien_bullet()
 
     def _check_aliens_bottom(self):
         """Check if any aliens have reached the bottom of the screen."""
         screen_rect = self.screen.get_rect()
         for alien in self.aliens.sprites():
+            if alien.rect.bottom >= screen_rect.bottom:
+                # Treat this the same as if the ship got hit.
+                self._ship_hit()
+                break
+        for alien in self.aliens2.sprites():
+            if alien.rect.bottom >= screen_rect.bottom:
+                # Treat this the same as if the ship got hit.
+                self._ship_hit()
+                break
+        for alien in self.aliens3.sprites():
             if alien.rect.bottom >= screen_rect.bottom:
                 # Treat this the same as if the ship got hit.
                 self._ship_hit()
@@ -283,6 +317,8 @@ class AlienInvasion:
 
             # Get rid of any remaining aliens and bullets.
             self.aliens.empty()
+            self.aliens2.empty()
+            self.aliens3.empty()
             self.bullets.empty()
 
             # Create a new fleet and center the ship.
@@ -292,7 +328,7 @@ class AlienInvasion:
             # Pause.
             sleep(0.5)
         else:
-            self.sb.write_file(str(self.sb.stats.high_score) + '\n')
+            self.write_file(str(self.sb.stats.high_score) + '\n')
             self.stats.game_active = False
             pygame.mouse.set_visible(True)
 
@@ -300,20 +336,16 @@ class AlienInvasion:
         """Create the fleet of aliens."""
         # Create an alien and find the number of aliens in a row.
         # Spacing between each alien is equal to one alien width.
+        ufo = Alien(self, 'images/ufo.png')
         alien = Alien(self, 'images/alien.png')
         alien2 = Alien(self, 'images/alien3.png')
         alien3 = Alien(self, 'images/alien5.png')
         alien_width, alien_height = alien.rect.size
         available_space_x = self.settings.screen_width - (2 * alien_width)
         number_aliens_x = available_space_x // (2 * alien_width)
-        #row_number = 6 rows of aliens from 0 - 5
-        #number_aliens_x = 15, 15 aliens across.
-        #available_space_y = 820
-        # Determine the number of rows of aliens that fit on the screen.
         ship_height = self.ship.rect.height
         available_space_y = (self.settings.screen_height -
                                 (3 * alien_height) - ship_height)
-        #number_rows = available_space_y // (2 * alien_height)
         number_rows = 0
         number_rows2 = 2
         number_rows3 = 4
@@ -344,7 +376,7 @@ class AlienInvasion:
         alien.x = alien_width + 2 * alien_width * alien_number
         alien.rect.x = alien.x
         alien.rect.y = alien.rect.height + 2 * alien.rect.height * row_number
-        self.aliens.add(alien)
+        self.aliens2.add(alien)
 
     def _create_alien3(self, alien_number, row_number):
         """Create an alien and place it in the row."""
@@ -353,7 +385,7 @@ class AlienInvasion:
         alien.x = alien_width + 2 * alien_width * alien_number
         alien.rect.x = alien.x
         alien.rect.y = alien.rect.height + 2 * alien.rect.height * row_number
-        self.aliens.add(alien)
+        self.aliens3.add(alien)
 
     def _check_fleet_edges(self):
         """Respond appropriately if any aliens have reached an edge."""
@@ -361,10 +393,24 @@ class AlienInvasion:
             if alien.check_edges():
                 self._change_fleet_direction()
                 break
+        for alien in self.aliens2.sprites():
+            if alien.check_edges():
+                self._change_fleet_direction()
+                break
+        for alien in self.aliens3.sprites():
+            if alien.check_edges():
+                self._change_fleet_direction()
+                break
 
     def _change_fleet_direction(self):
         """Drop the entire fleet and change the fleet's direction."""
         for alien in self.aliens.sprites():
+            alien.rect.y += self.settings.fleet_drop_speed
+        self.settings.fleet_direction *= -1
+        for alien in self.aliens2.sprites():
+            alien.rect.y += self.settings.fleet_drop_speed
+        self.settings.fleet_direction *= -1
+        for alien in self.aliens3.sprites():
             alien.rect.y += self.settings.fleet_drop_speed
         self.settings.fleet_direction *= -1
 
@@ -375,10 +421,17 @@ class AlienInvasion:
             self.play_button.draw_button()
             self.exit_button.draw_button()
         if self.show_scores:
+            self.cnt = 100
             self.back_button.draw_button()
-            self.messages("Highscores", 950, 500)
+            self.messages("Highscores", 950, 200)
             self.screen.blit(self.text, self.textRect)
-        if not self.stats.game_active:
+
+            for x in range(0, 10):
+                self.messages_commando(self.scores[x], 950, 250 + self.cnt)
+                self.screen.blit(self.text, self.textRect)
+                self.cnt += 50
+
+        if not self.stats.game_active and not self.show_scores:
             self.messages("Alien Invasion", 950, 300)
             self.screen.blit(self.text, self.textRect)
 
@@ -388,9 +441,10 @@ class AlienInvasion:
         self.ship.blitme()
         for bullet in self.bullets.sprites():
             bullet.draw_bullet()
-        for alien_bullet in self.alien_bullets.sprites():
-            alien_bullet.draw_bullet()
+
         self.aliens.draw(self.screen)
+        self.aliens2.draw(self.screen)
+        self.aliens3.draw(self.screen)
 
         # Draw the score information.
         self.sb.show_score()
@@ -400,8 +454,6 @@ class AlienInvasion:
             self.screen.fill((21, 30, 161))
 
         self._screen_handler()
-        #self.highscores.write_file("TEST 100") #This works
-
         pygame.display.flip()
 
 if __name__ == '__main__':

@@ -10,7 +10,6 @@ class Alien(Sprite):
         self.screen = ai_game.screen
         self.settings = ai_game.settings
 
-        point = 10
         # Clock
         self.watch = pygame.time.Clock()
 

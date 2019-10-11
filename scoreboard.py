@@ -74,29 +74,6 @@ class Scoreboard:
             ship.rect.y = 10
             self.ships.add(ship)
 
-    #def read_file(self):
-    #    filepath = "Highscores/Highscores.txt"
-    #    with open(filepath) as fp:
-    #        line = fp.readline()
-    #        cnt = 100
-    #        while line:
-    #            print("Score: {}".format(line.strip()))
-    #            line = fp.readline()
-    #            cnt += 100
-    #            #self.print_score(str(line), 950, 600 + cnt)
-    #            self.print_score("TEST", 950, 600 + cnt)
-    #            self.screen.blit(self.text, self.textRect)
-        #f = open("Highscores/Highscores.txt")
-        #f.read()
-        #Perform operations
-        #f.close()
-
-    def write_file(self, msg):
-        filepath = "Highscores/Highscores.txt"
-        f = open(filepath, 'a')
-        f.write(msg)
-        f.close()
-
     def check_high_score(self):
         """Check to see if there's a new high score."""
         if self.stats.score > self.stats.high_score:
