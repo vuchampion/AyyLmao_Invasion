@@ -6,16 +6,16 @@ class Settings:
         # Screen settings
         self.screen_width = 1200
         self.screen_height = 800
-        self.bg_color = (0, 0, 0)
+        self.bg_color = (21, 30, 161)
 
         # Ship settings
         self.ship_limit = 3
 
         # Bullet settings
-        self.bullet_width = 10
-        self.bullet_height = 30
-        self.bullet_color = (255, 43, 43)
-        self.bullets_allowed = 99
+        self.bullet_width = 3
+        self.bullet_height = 10
+        self.bullet_color = (255, 255, 0)
+        self.bullets_allowed = 3
 
         # Alien settings
         self.fleet_drop_speed = 5 #5
@@ -40,6 +40,7 @@ class Settings:
         self.alien_points = 200
         self.alien2_points = 50
         self.alien3_points = 500
+        self.ufo_points = 1000
 
     def increase_speed(self):
         """Increase speed settings and alien point values."""

@@ -18,10 +18,6 @@ class Alien(Sprite):
         self.image = pygame.image.load(image_file)
         self.rect = self.image.get_rect()
 
-        # Animating sprites
-        self.sprites = [pygame.image.load('images/alien.png'), pygame.image.load('images/alien2.png')]
-        self.frame = 0
-
         # Start each new alien near the top left of the screen.
         self.rect.x = self.rect.width
         self.rect.y = self.rect.height

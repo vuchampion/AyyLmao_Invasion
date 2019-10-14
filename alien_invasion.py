@@ -11,11 +11,10 @@ from ship import Ship
 from bullet import Bullet
 from alien import Alien
 from scores import Scores
+from timer import Timer
 
 pygame.init()
 pygame.mixer.init()
-
-animate_ship = pygame.USEREVENT + 2
 
 class AlienInvasion:
     # Sounds
@@ -24,6 +23,7 @@ class AlienInvasion:
     bg_music = pygame.mixer.Sound("sounds/alienblues.wav")
     bg_music2 = pygame.mixer.Sound("sounds/alienblues.wav")
     bg_music3 = pygame.mixer.Sound("sounds/alienblues.wav")
+    ufo_music = pygame.mixer.Sound("sounds/ufo.wav")
 
     def __init__(self):
         self.settings = Settings()
@@ -31,37 +31,53 @@ class AlienInvasion:
         self.play_game = False
         self.bg_music.play(99)
         self.elapsed_time = 0
+        self.count = 0
 
-        #self.screen = pygame.display.set_mode((self.HEIGHT, self.WIDTH))
         self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
         self.settings.screen_width = self.screen.get_rect().width
         self.settings.screen_height = self.screen.get_rect().height
         pygame.display.set_caption("Alien Invasion")
 
-        # Create an instance to store game statistics, and create a scoreboard.
         self.stats = GameStats(self)
         self.sb = Scoreboard(self)
         self.highscores = Scores(self)
         self.scores = []
         self.ship = Ship(self)
         self.bullets = pygame.sprite.Group()
+
         self.aliens = pygame.sprite.Group()
         self.aliens2 = pygame.sprite.Group()
         self.aliens3 = pygame.sprite.Group()
+        self.ufo_group = pygame.sprite.Group()
+
+        # Images
+        self.image = 'images/alien.png'
+        self.image2 = 'images/alien2.png'
+        self.image3 = 'images/alien3.png'
+        self.image4 = 'images/alien4.png'
+        self.image5 = 'images/alien5.png'
+        self.image6 = 'images/alien6.png'
+        self.al_image = pygame.image.load('images/alien.png')
+        self.al_image2 = pygame.image.load('images/alien2.png')
+        self.al_image3 = pygame.image.load('images/alien3.png')
+        self.al_image4 = pygame.image.load('images/alien4.png')
+        self.al_image5 = pygame.image.load('images/alien5.png')
+        self.al_image6 = pygame.image.load('images/alien6.png')
+
+        self.al_image7 = pygame.image.load('images/ufo.png')
+        self.ufo_spawned = False
 
         self._create_fleet()
+        self.load_ufo()
 
-        # Clock
-        self.watch = pygame.time.Clock()
+        self.clock = pygame.time.Clock()
         self.fps = 120
 
-        # Make buttons.
+        # Buttons
         self.play_button = Button(self, "PLAY", 700, 400)
         self.exit_button = Button(self, "EXIT", 1000, 400)
         self.scores_button = Button(self, "SCORES", 850, 500)
         self.back_button = Button(self, "BACK", 100, 200)
-
-
 
     def messages(self, msg, xcor, ycor):
         self.font = pygame.font.Font('Fonts/SFAlienEncounters-Italic.ttf', 150)
@@ -69,22 +85,29 @@ class AlienInvasion:
         self.textRect = self.text.get_rect()
         self.textRect.center = (xcor, ycor)
 
-    def messages_commando(self, msg, xcor, ycor):
-        self.font = pygame.font.Font('Fonts/SFAlienEncountersSolid-Ital.ttf', 50)
-        self.text = self.font.render(msg, True, (255, 255, 0))
+    def messages_commando(self, msg, xcor, ycor, size):
+        self.font = pygame.font.Font('Fonts/SFAlienEncountersSolid-Ital.ttf', size)
+        self.text = self.font.render(msg, True, (245, 66, 114))
         self.textRect = self.text.get_rect()
         self.textRect.center = (xcor, ycor)
+
+    def random_timer(self):
+        if random.randrange(0, 1000) < 1:
+            self.spawn_ufo()
 
     def run_game(self):
         """Start the main loop for the game."""
         while True:
+            self.clock.tick(self.fps)
             self._check_events()
-            self.watch.tick(self.fps)
-            pygame.time.set_timer(animate_ship, 200)
             if self.stats.game_active:
                 self.ship.update()
                 self._update_bullets()
                 self._update_aliens()
+                self.random_timer()
+
+                if self.ufo_spawned:
+                    self.update_ufo()
 
             self._update_screen()
 
@@ -103,8 +126,6 @@ class AlienInvasion:
                 self._check_exit_button(mouse_pos)
                 self._check_scores_button(mouse_pos)
                 self._check_back_button(mouse_pos)
-            elif event.type == animate_ship:
-                pass
 
     def _check_play_button(self, mouse_pos):
         """Start a new game when the player clicks Play."""
@@ -224,11 +245,6 @@ class AlienInvasion:
 
         self._check_bullet_alien_collisions()
 
-    def tick_func(self):
-        if pygame.time.get_ticks() % 1000 > 990:
-            self.elapsed_time += 1
-        return self.elapsed_time
-
     def _check_bullet_alien_collisions(self):
         """Respond to bullet-alien collisions."""
         # Remove any bullets and aliens that have collided.
@@ -238,22 +254,31 @@ class AlienInvasion:
                 self.bullets, self.aliens2, True, True)
         collisions3 = pygame.sprite.groupcollide(
                 self.bullets, self.aliens3, True, True)
+        collisions_ufo = pygame.sprite.groupcollide(
+                self.bullets, self.ufo_group, True, True)
 
         if collisions:
             for aliens in collisions.values():
                 self.stats.score += self.settings.alien_points * len(aliens)
             self.sb.prep_score()
             self.sb.check_high_score()
-        if collisions2:
+        elif collisions2:
             for aliens2 in collisions2.values():
                 self.stats.score += self.settings.alien2_points * len(aliens2)
             self.sb.prep_score()
             self.sb.check_high_score()
-        if collisions3:
+        elif collisions3:
             for aliens3 in collisions3.values():
                 self.stats.score += self.settings.alien3_points * len(aliens3)
             self.sb.prep_score()
             self.sb.check_high_score()
+        elif collisions_ufo:
+            for ufo_index in collisions_ufo.values():
+                self.stats.score += self.settings.ufo_points * len(ufo_index)
+            self.reset_ufo()
+            self.sb.prep_score()
+            self.sb.check_high_score()
+
 
         if not self.aliens and not self.aliens2 and not self.aliens3:
             # Destroy existing bullets and create new fleet.
@@ -271,6 +296,9 @@ class AlienInvasion:
           then update the positions of all aliens in the fleet.
         """
         self._check_fleet_edges()
+        self._check_fleet_edges2()
+        self._check_fleet_edges3()
+
         self.aliens.update()
         self.aliens2.update()
         self.aliens3.update()
@@ -336,7 +364,6 @@ class AlienInvasion:
         """Create the fleet of aliens."""
         # Create an alien and find the number of aliens in a row.
         # Spacing between each alien is equal to one alien width.
-        ufo = Alien(self, 'images/ufo.png')
         alien = Alien(self, 'images/alien.png')
         alien2 = Alien(self, 'images/alien3.png')
         alien3 = Alien(self, 'images/alien5.png')
@@ -352,35 +379,41 @@ class AlienInvasion:
         # Create the full fleet of aliens.
         for row_number in range(number_rows, 2):
             for alien_number in range(number_aliens_x):
-                self._create_alien3(alien_number, row_number)
+                self._create_alien3(alien_number, row_number, self.image5)
+            if row_number == 0 or row_number == 1:
+                pass
         for row_number in range(number_rows2, 4):
             for alien_number in range(number_aliens_x):
-                self._create_alien(alien_number, row_number)
+                self._create_alien(alien_number, row_number, self.image)
+            if row_number == 2 or row_number == 3:
+                pass
         for row_number in range(number_rows3, 6):
             for alien_number in range(number_aliens_x):
-                self._create_alien2(alien_number, row_number)
+                self._create_alien2(alien_number, row_number, self.image3)
+            if row_number == 4 or row_number == 5:
+                pass
 
-    def _create_alien(self, alien_number, row_number):
+    def _create_alien(self, alien_number, row_number, image):
         """Create an alien and place it in the row."""
-        alien = Alien(self, 'images/alien.png')
+        alien = Alien(self, image)
         alien_width, alien_height = alien.rect.size
         alien.x = alien_width + 2 * alien_width * alien_number
         alien.rect.x = alien.x
         alien.rect.y = alien.rect.height + 2 * alien.rect.height * row_number
         self.aliens.add(alien)
 
-    def _create_alien2(self, alien_number, row_number):
+    def _create_alien2(self, alien_number, row_number, image):
         """Create an alien and place it in the row."""
-        alien = Alien(self, 'images/alien3.png')
+        alien = Alien(self, image)
         alien_width, alien_height = alien.rect.size
         alien.x = alien_width + 2 * alien_width * alien_number
         alien.rect.x = alien.x
         alien.rect.y = alien.rect.height + 2 * alien.rect.height * row_number
         self.aliens2.add(alien)
 
-    def _create_alien3(self, alien_number, row_number):
+    def _create_alien3(self, alien_number, row_number, image):
         """Create an alien and place it in the row."""
-        alien = Alien(self, 'images/alien5.png')
+        alien = Alien(self, image)
         alien_width, alien_height = alien.rect.size
         alien.x = alien_width + 2 * alien_width * alien_number
         alien.rect.x = alien.x
@@ -393,26 +426,73 @@ class AlienInvasion:
             if alien.check_edges():
                 self._change_fleet_direction()
                 break
-        for alien in self.aliens2.sprites():
-            if alien.check_edges():
-                self._change_fleet_direction()
+
+    def _check_fleet_edges2(self):
+        for alien2 in self.aliens2.sprites():
+            if alien2.check_edges():
+                self._change_fleet_direction2()
                 break
-        for alien in self.aliens3.sprites():
-            if alien.check_edges():
-                self._change_fleet_direction()
+
+    def _check_fleet_edges3(self):
+        for alien3 in self.aliens3.sprites():
+            if alien3.check_edges():
+                self._change_fleet_direction3()
                 break
 
     def _change_fleet_direction(self):
         """Drop the entire fleet and change the fleet's direction."""
         for alien in self.aliens.sprites():
             alien.rect.y += self.settings.fleet_drop_speed
+        #self.settings.fleet_direction *= -1
+
+    def _change_fleet_direction2(self):
+        for alien2 in self.aliens2.sprites():
+            alien2.rect.y += self.settings.fleet_drop_speed
+        #self.settings.fleet_direction *= -1
+
+    def _change_fleet_direction3(self):
+        for alien3 in self.aliens3.sprites():
+            alien3.rect.y += self.settings.fleet_drop_speed
         self.settings.fleet_direction *= -1
-        for alien in self.aliens2.sprites():
-            alien.rect.y += self.settings.fleet_drop_speed
-        self.settings.fleet_direction *= -1
-        for alien in self.aliens3.sprites():
-            alien.rect.y += self.settings.fleet_drop_speed
-        self.settings.fleet_direction *= -1
+
+
+    def alien_glossary(self):
+        self.screen.blit(self.al_image, (750, 600))
+        self.messages_commando("50 POINTS", 940, 615, 30)
+        self.screen.blit(self.text, self.textRect)
+        self.screen.blit(self.al_image3, (753, 640))
+        self.messages_commando("200 POINTS", 953, 662, 30)
+        self.screen.blit(self.text, self.textRect)
+        self.screen.blit(self.al_image5, (753, 690))
+        self.messages_commando("500 POINTS", 953, 712, 30)
+        self.screen.blit(self.text, self.textRect)
+        self.screen.blit(self.al_image7, (735, 720))
+        self.messages_commando("1000 POINTS", 955, 770, 30)
+        self.screen.blit(self.text, self.textRect)
+
+    def load_ufo(self):
+        self.ufo = Alien(self, 'images/ufo.png')
+        self.ufo.rect.x = 0
+        self.ufo.rect.y = -20
+
+    def spawn_ufo(self):
+        self.ufo_group.add(self.ufo)
+        self.ufo_spawned = True
+        self.ufo_music.play()
+
+    def update_ufo(self):
+        self.ufo.rect.x += 2.5
+        if self.ufo_spawned:
+            for ufo_index in self.ufo_group.sprites():
+                if ufo_index.check_edges():
+                    self.reset_ufo()
+                    self.ufo_spawned = False
+                    break
+
+    def reset_ufo(self):
+        self.ufo.rect.x = 0
+        self.ufo.rect.y = -20
+        self.ufo_music.stop()
 
     def _screen_handler(self):
         """Handle the status of the screen"""
@@ -427,13 +507,14 @@ class AlienInvasion:
             self.screen.blit(self.text, self.textRect)
 
             for x in range(0, 10):
-                self.messages_commando(self.scores[x], 950, 250 + self.cnt)
+                self.messages_commando(self.scores[x], 950, 250 + self.cnt, 50)
                 self.screen.blit(self.text, self.textRect)
                 self.cnt += 50
 
         if not self.stats.game_active and not self.show_scores:
             self.messages("Alien Invasion", 950, 300)
             self.screen.blit(self.text, self.textRect)
+            self.alien_glossary()
 
     def _update_screen(self):
         """Update images on the screen, and flip to the new screen."""
@@ -445,6 +526,8 @@ class AlienInvasion:
         self.aliens.draw(self.screen)
         self.aliens2.draw(self.screen)
         self.aliens3.draw(self.screen)
+        if self.ufo_spawned:
+            self.ufo_group.draw(self.screen)
 
         # Draw the score information.
         self.sb.show_score()
@@ -452,6 +535,7 @@ class AlienInvasion:
         # Draw the play button if the game is inactive.
         if not self.stats.game_active:
             self.screen.fill((21, 30, 161))
+
 
         self._screen_handler()
         pygame.display.flip()
