@@ -75,6 +75,7 @@ class AlienInvasion:
 
         # Buttons
         self.play_button = Button(self, "PLAY", 700, 400)
+        self.restart_button = Button(self, "RESTART", 900, 10)
         self.exit_button = Button(self, "EXIT", 1000, 400)
         self.scores_button = Button(self, "SCORES", 850, 500)
         self.back_button = Button(self, "BACK", 100, 200)
@@ -123,9 +124,36 @@ class AlienInvasion:
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = pygame.mouse.get_pos()
                 self._check_play_button(mouse_pos)
+                self._check_restart_button(mouse_pos)
                 self._check_exit_button(mouse_pos)
                 self._check_scores_button(mouse_pos)
                 self._check_back_button(mouse_pos)
+
+    def _check_restart_button(self, mouse_pos):
+        button_clicked = self.restart_button.rect.collidepoint(mouse_pos)
+        if button_clicked:
+            print("RESTART")
+            self.stats.game_active = False
+            self.settings.initialize_dynamic_settings()
+
+            # Reset the game statistics.
+            self.stats.reset_stats()
+            self.sb.prep_score()
+            self.sb.prep_level()
+            self.sb.prep_ships()
+
+            # Get rid of any remaining aliens and bullets.
+            self.aliens.empty()
+            self.aliens2.empty()
+            self.aliens3.empty()
+            self.bullets.empty()
+
+            # Create a new fleet and center the ship.
+            self._create_fleet()
+            self.ship.center_ship()
+
+            # Hide the mouse cursor.
+            pygame.mouse.set_visible(True)
 
     def _check_play_button(self, mouse_pos):
         """Start a new game when the player clicks Play."""
@@ -152,7 +180,7 @@ class AlienInvasion:
             self.ship.center_ship()
 
             # Hide the mouse cursor.
-            pygame.mouse.set_visible(False)
+            pygame.mouse.set_visible(True)
 
     def _check_exit_button(self, mouse_pos):
         """Exit the game when the player clicks Exit"""
@@ -500,6 +528,9 @@ class AlienInvasion:
             self.scores_button.draw_button()
             self.play_button.draw_button()
             self.exit_button.draw_button()
+
+        if self.stats.game_active:
+            self.restart_button.draw_button()
         if self.show_scores:
             self.cnt = 100
             self.back_button.draw_button()
